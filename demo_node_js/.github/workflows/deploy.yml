@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Docker image
+        run: docker build -t my-node-app .
+
+      - name: Push Docker image (Optional)
+        run: echo "Login & Push to DockerHub/ECR here"
+
+      - name: Deploy to Server (SSH)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            docker pull my-node-app
+            docker stop app || true
+            docker rm app || true
+            docker run -d --name app -p 80:3000 my-node-app
+
